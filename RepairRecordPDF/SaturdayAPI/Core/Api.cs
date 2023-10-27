@@ -14,12 +14,21 @@ public class Api
     internal string HttpAddress;
     internal HttpClient HttpClient;
 
-    public async Task<IEnumerable<Events>> GetEvents()
+    public async Task<IEnumerable<EventInfo>> GetEvents()
     {
         var response = await HttpClient.GetAsync("events");
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadAsStringAsync();
-        return JsonConvert.DeserializeObject<Events[]>(content)
+        return JsonConvert.DeserializeObject<EventInfo[]>(content)
+            ?? throw new NullReferenceException(nameof(content));
+    }
+
+    public async Task<EventInfo> GetEventById(int eventId)
+    {
+        var response = await HttpClient.GetAsync($"events/{eventId}");
+        response.EnsureSuccessStatusCode();
+        var content = await response.Content.ReadAsStringAsync();
+        return JsonConvert.DeserializeObject<EventInfo>(content)
             ?? throw new NullReferenceException(nameof(content));
     }
 }

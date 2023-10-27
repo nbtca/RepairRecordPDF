@@ -2,13 +2,13 @@
 
 namespace SaturdayAPI.Core.Types;
 
-public class Events
+public class EventInfo
 {
     [JsonProperty("eventId")]
-    public required long EventId { get; set; }
+    public required int EventId { get; set; }
 
     [JsonProperty("clientId")]
-    public required long ClientId { get; set; }
+    public required int ClientId { get; set; }
 
     [JsonProperty("model")]
     public required string Model { get; set; }
@@ -26,13 +26,31 @@ public class Events
     public required Status Status { get; set; }
 
     [JsonProperty("logs")]
-    public required object Logs { get; set; }
+    public EventLog[]? Logs { get; set; }
 
     [JsonProperty("gmtCreate")]
     public required DateTimeOffset GmtCreate { get; set; }
 
     [JsonProperty("gmtModified")]
     public required DateTimeOffset GmtModified { get; set; }
+}
+
+public class EventLog
+{
+    [JsonProperty("logId")]
+    public required int LogId { get; set; }
+
+    [JsonProperty("description")]
+    public required string Description { get; set; }
+
+    [JsonProperty("memberId")]
+    public required string MemberId { get; set; }
+
+    [JsonProperty("action")]
+    public required string Action { get; set; }
+
+    [JsonProperty("gmtCreate")]
+    public required DateTimeOffset GmtCreate { get; set; }
 }
 
 public class ClosedBy
@@ -77,11 +95,12 @@ public enum Status
     Closed
 };
 
+#region JsonConverter
 internal class RoleConverter : JsonConverter
 {
     public override bool CanConvert(Type t) => t == typeof(Role) || t == typeof(Role?);
 
-    public override object ReadJson(
+    public override object? ReadJson(
         JsonReader reader,
         Type t,
         object? existingValue,
@@ -91,14 +110,12 @@ internal class RoleConverter : JsonConverter
         if (reader.TokenType == JsonToken.Null)
             return null;
         var value = serializer.Deserialize<string>(reader);
-        switch (value)
+        return value switch
         {
-            case "admin":
-                return Role.Admin;
-            case "member":
-                return Role.Member;
-        }
-        throw new Exception("Cannot unmarshal type Role");
+            "admin" => Role.Admin,
+            "member" => Role.Member,
+            _ => throw new Exception("Cannot unmarshal type Role")
+        };
     }
 
     public override void WriteJson(
@@ -130,7 +147,7 @@ internal class StatusConverter : JsonConverter
 {
     public override bool CanConvert(Type t) => t == typeof(Status) || t == typeof(Status?);
 
-    public override object ReadJson(
+    public override object? ReadJson(
         JsonReader reader,
         Type t,
         object? existingValue,
@@ -140,16 +157,13 @@ internal class StatusConverter : JsonConverter
         if (reader.TokenType == JsonToken.Null)
             return null;
         var value = serializer.Deserialize<string>(reader);
-        switch (value)
+        return value switch
         {
-            case "accepted":
-                return Status.Accepted;
-            case "cancelled":
-                return Status.Cancelled;
-            case "closed":
-                return Status.Closed;
-        }
-        throw new Exception("Cannot unmarshal type Status");
+            "accepted" => Status.Accepted,
+            "cancelled" => Status.Cancelled,
+            "closed" => Status.Closed,
+            _ => throw new Exception("Cannot unmarshal type Status")
+        };
     }
 
     public override void WriteJson(
@@ -179,3 +193,4 @@ internal class StatusConverter : JsonConverter
         throw new Exception("Cannot marshal type Status");
     }
 }
+#endregion
