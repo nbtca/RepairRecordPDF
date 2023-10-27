@@ -4,6 +4,9 @@ using EventInfo = SaturdayAPI.Core.Types.EventInfo;
 
 namespace SaturdayAPI.Core;
 
+/// <summary>
+/// 后端API对接
+/// </summary>
 public class Api
 {
     public Api(string baseAddress = "https://api.nbtca.space/v2/")
@@ -15,7 +18,7 @@ public class Api
     internal string HttpBaseAddress;
     internal HttpClient HttpClient;
 
-    public async Task<IEnumerable<EventInfo>> GetEvents()
+    public async Task<EventInfo[]> GetEvents()
     {
         var response = await HttpClient.GetAsync("events");
         response.EnsureSuccessStatusCode();
@@ -33,7 +36,7 @@ public class Api
             ?? throw new NullReferenceException(nameof(content));
     }
 
-    public async Task<IEnumerable<MemberInfo>> GetMembers()
+    public async Task<MemberInfo[]> GetMembers()
     {
         var response = await HttpClient.GetAsync("members");
         response.EnsureSuccessStatusCode();

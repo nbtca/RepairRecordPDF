@@ -27,4 +27,6 @@ public class MemberInfo
 
     [JsonProperty("gmtModified")]
     public required DateTimeOffset GmtModified { get; set; }
+
+    public override string ToString() => $"{Alias} ({MemberId})";
 }

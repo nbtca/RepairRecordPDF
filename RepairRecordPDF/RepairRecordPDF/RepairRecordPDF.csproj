@@ -12,8 +12,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="CA-logo.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    <ProjectReference Include="..\SaturdayAPI\SaturdayAPI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="CA-logo.svg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

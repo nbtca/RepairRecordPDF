@@ -1,91 +1,197 @@
-﻿using System.Security.Cryptography.X509Certificates;
-using QuestPDF.Fluent;
+﻿using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using QuestPDF.Previewer;
-
-//Newtonsoft.Json.Linq.JObject
+using SaturdayAPI.Core.Types;
+using SaturdayAPI.Wrapper;
+using Action = SaturdayAPI.Core.Types.Action;
 
 QuestPDF.Settings.License = LicenseType.Community;
 
-// code in your main method
-Document
-    .Create(container =>
+var outputDir = new DirectoryInfo(Path.Combine(Environment.CurrentDirectory, "output"));
+if (!outputDir.Exists)
+    outputDir.Create();
+var api = new ApiWithCache(Path.Combine(Environment.CurrentDirectory, "cache"));
+string FormatTime(DateTimeOffset time) => $"{time:yyyy-MM-dd HH:mm}";
+foreach (var eventInfo in (await api.GetEvents()).Skip(1))
+{
+    if (eventInfo.Status != Status.Closed)
     {
-        container.Page(page =>
-        {
-            page.Size(PageSizes.A5);
-            page.Margin(1, Unit.Centimetre);
-            page.PageColor(Colors.White);
-            page.DefaultTextStyle(x => x.FontSize(18).FontFamily("Microsoft YaHei"));
-            page.Header()
-                .Text("维修记录单")
-                .Underline()
-                .SemiBold()
-                .FontSize(32)
-                .FontColor(Colors.Blue.Medium);
-            page.Content()
-                .PaddingVertical(1, Unit.Centimetre)
-                .Column(x =>
-                {
-                    x.Spacing(20);
-                    x.Item()
-                        .Border(1)
-                        .Table(table =>
-                        {
-                            table.ColumnsDefinition(columns =>
-                            {
-                                columns.RelativeColumn();
-                                columns.RelativeColumn();
-                            });
-                            uint currentLine = 0;
-                            void Line(string type, string content)
-                            {
-                                currentLine++;
-                                Cell(currentLine, 1).Text(type);
-                                Cell(currentLine, 2).Text(content);
-                                IContainer Cell(uint row, uint column) =>
-                                    table
-                                        .Cell()
-                                        .Row(row)
-                                        .Column(column)
-                                        .Element(
-                                            c =>
-                                                c.Border(0)
-                                                    .ShowOnce()
-                                                    .MinWidth(50)
-                                                    .MinHeight(50)
-                                                    .AlignCenter()
-                                                    .AlignMiddle()
-                                        );
-                            }
-                            Line("报修人", "xxx");
-                            Line("日期", "xxx");
-                            Line("描述", "xxx\ntest");
-                            Line("处理结果", "xxx");
-                            Line("评价", "xxx");
-                        });
-                    //x.Item().Table(t =>
-                    //{
-                    //});
-                    x.Item().AlignCenter().Width(100).Image("CA-logo.png");
-                    //x.Item().Image(Placeholders.Image(200, 100));
-                });
-            page.Footer()
-                .AlignCenter()
-                .Text(x =>
-                {
-                    x.AlignCenter();
-                    x.Span("浙大宁波理工学院");
-                    x.EmptyLine();
-                    x.Span("计算机协会").LineHeight(0.5f);
-                    //x.Span("Page ");
-                    //x.CurrentPageNumber();
-                });
-        });
-    })
-#if DEBUG
-    .ShowInPreviewer();
-#else
-    .GeneratePdf("hello.pdf");
+        continue; //跳过未关闭的事件
+    }
+#if !DEBUG
+    var fileName = $"{eventInfo.GmtCreate:yyyy-MM-dd}_{eventInfo.Member.MemberId}.pdf";
+    var filePath = Path.Combine(outputDir.Name, fileName);
+    if (File.Exists(filePath))
+    {
+        continue; //已经生成过了
+    }
+    Console.WriteLine("生成：" + fileName);
 #endif
+    var logs = eventInfo.Logs ?? (await api.GetEventById(eventInfo.EventId)).Logs!;
+    Document
+        .Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A5);
+                page.Margin(1, Unit.Centimetre);
+                page.PageColor(Colors.White);
+                page.DefaultTextStyle(x => x.FontSize(15).FontFamily("Microsoft YaHei"));
+                page.Header()
+                    .Container()
+                    .Table(t =>
+                    {
+                        t.ColumnsDefinition(columns =>
+                        {
+                            columns.RelativeColumn();
+                            columns.RelativeColumn();
+                        });
+                        t.Cell()
+                            .Row(1)
+                            .Column(1)
+                            .AlignMiddle()
+                            .Text("维修记录单")
+                            .Underline()
+                            .SemiBold()
+                            .FontSize(30)
+                            .FontColor(Colors.Blue.Medium);
+                        t.Cell().Row(1).Column(2).AlignRight().Width(80).Image("CA-logo.svg");
+                    });
+
+                //x.Item().AlignCenter().Width(100).Image("CA-logo.png");
+                page.Content()
+                    .PaddingVertical(1, Unit.Centimetre)
+                    .Column(x =>
+                    {
+                        x.Spacing(20);
+                        x.Item()
+                            .Border(1)
+                            .Table(table =>
+                            {
+                                table.ColumnsDefinition(columns =>
+                                {
+                                    columns.RelativeColumn(1);
+                                    columns.RelativeColumn(3);
+                                });
+                                uint currentLine = 0;
+                                void Line(
+                                    string type,
+                                    string? content = null,
+                                    DateTimeOffset? timeOrNull = null
+                                )
+                                {
+                                    currentLine++;
+                                    Cell(currentLine, 1).Text(type);
+                                    if (timeOrNull is { } time)
+                                    {
+                                        Cell(currentLine, 2)
+                                            .AlignCenter()
+                                            .Container()
+                                            .Column(t =>
+                                            {
+                                                t.Item()
+                                                    .AlignCenter()
+                                                    .Text(FormatTime(time))
+                                                    .FontColor(Colors.Blue.Darken1)
+                                                    .Italic();
+                                                if (content is not null)
+                                                {
+                                                    t.Item()
+                                                        .AlignCenter()
+                                                        .Text(content)
+                                                        .FontColor(Colors.Green.Darken2);
+                                                }
+                                            });
+                                    }
+                                    else
+                                    {
+                                        Cell(currentLine, 2).AlignCenter().Text(content);
+                                    }
+                                    IContainer Cell(uint row, uint column) =>
+                                        table
+                                            .Cell()
+                                            .Row(row)
+                                            .Column(column)
+                                            .Element(
+                                                c =>
+                                                    c.BorderBottom(1)
+                                                        .BorderColor(Colors.Grey.Lighten2)
+                                                        .ShowOnce()
+                                                        .MinWidth(50)
+                                                        .MinHeight(25)
+                                                        .AlignCenter()
+                                                        .AlignMiddle()
+                                            );
+                                }
+                                Line("报修人", $"{eventInfo.Member}");
+                                Line("创建日期", timeOrNull: eventInfo.GmtCreate);
+                                Line("结束日期", timeOrNull: eventInfo.GmtModified);
+                                Line("型号", $"{eventInfo.Model}");
+                                Line("问题描述", $"{eventInfo.Problem}");
+                                Line("处理人", $"{eventInfo.ClosedBy}");
+                                foreach (var eventLog in logs)
+                                {
+                                    switch (eventLog.Action)
+                                    {
+                                        case Action.Create:
+                                            Line("+ 创建", timeOrNull: eventLog.GmtCreate);
+                                            break;
+                                        case Action.Accept:
+                                            Line("+ 接受", timeOrNull: eventLog.GmtCreate);
+                                            break;
+                                        case Action.Cancel:
+                                            Line("+ 取消", timeOrNull: eventLog.GmtCreate);
+                                            break;
+                                        case Action.Drop:
+                                            Line("+ 丢弃", timeOrNull: eventLog.GmtCreate);
+                                            break;
+                                        case Action.Commit:
+                                            Line(
+                                                "+ 进度",
+                                                $"{eventLog.Description}",
+                                                eventLog.GmtCreate
+                                            );
+                                            break;
+                                        case Action.Reject:
+                                            Line("- 拒绝", timeOrNull: eventLog.GmtCreate);
+                                            break;
+                                        case Action.Close:
+                                            Line("- 关闭", timeOrNull: eventLog.GmtCreate);
+                                            break;
+                                        case Action.Update:
+                                            Line(
+                                                "+",
+                                                $"{eventLog.Description}",
+                                                eventLog.GmtCreate
+                                            );
+                                            break;
+                                        default:
+                                            Line(
+                                                $"+{eventLog.Action}",
+                                                timeOrNull: eventLog.GmtCreate
+                                            );
+                                            break;
+                                    }
+                                }
+                            });
+                    });
+                page.Footer()
+                    .AlignCenter()
+                    .Text(x =>
+                    {
+                        x.AlignCenter();
+                        x.Span("浙大宁波理工学院");
+                        x.EmptyLine();
+                        x.Span("计算机协会").LineHeight(0.5f);
+                        //x.Span("Page ");
+                        //x.CurrentPageNumber();
+                    });
+            });
+        })
+#if DEBUG
+        .ShowInPreviewer();
+#else
+        .GeneratePdf(filePath);
+#endif
+}

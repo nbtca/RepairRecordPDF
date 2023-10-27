@@ -5,9 +5,11 @@ namespace SaturdayAPI.Core.Types;
 [JsonConverter(typeof(StatusConverter))]
 public enum Status
 {
+    Open,
     Accepted,
     Cancelled,
-    Closed
+    Closed,
+    Committed
 };
 
 internal class StatusConverter : JsonConverter
@@ -26,9 +28,11 @@ internal class StatusConverter : JsonConverter
         var value = serializer.Deserialize<string>(reader);
         return value switch
         {
+            "open" => Status.Open,
             "accepted" => Status.Accepted,
             "cancelled" => Status.Cancelled,
             "closed" => Status.Closed,
+            "committed" => Status.Committed,
             _ => throw new Exception("Cannot unmarshal type Status")
         };
     }
@@ -55,6 +59,12 @@ internal class StatusConverter : JsonConverter
                 return;
             case Status.Closed:
                 serializer.Serialize(writer, "closed");
+                return;
+            case Status.Open:
+                serializer.Serialize(writer, "open");
+                return;
+            case Status.Committed:
+                serializer.Serialize(writer, "committed");
                 return;
         }
         throw new Exception("Cannot marshal type Status");
