@@ -2,10 +2,12 @@
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using QuestPDF.Previewer;
+using RepairRecordPDF;
 using SaturdayAPI.Core.Types;
 using SaturdayAPI.Wrapper;
 using Action = SaturdayAPI.Core.Types.Action;
 
+bool outputImg = true; //true为输出图片，false为输出pdf
 QuestPDF.Settings.License = LicenseType.Community;
 
 var outputDir = new DirectoryInfo(Path.Combine(Environment.CurrentDirectory, "output"));
@@ -13,23 +15,25 @@ if (!outputDir.Exists)
     outputDir.Create();
 var api = new ApiWithCache(Path.Combine(Environment.CurrentDirectory, "cache"));
 string FormatTime(DateTimeOffset time) => $"{time:yyyy-MM-dd HH:mm}";
+var logoSvg = new Svg.Skia.SKSvg();
+logoSvg.Load("CA-logo.svg");
 foreach (var eventInfo in (await api.GetEvents()).Skip(1))
 {
     if (eventInfo.Status != Status.Closed)
     {
+        Console.WriteLine("跳过：" + eventInfo.EventId);
         continue; //跳过未关闭的事件
     }
 #if !DEBUG
-    var fileName = $"{eventInfo.GmtCreate:yyyy-MM-dd}_{eventInfo.Member.MemberId}.pdf";
+    var fileName =
+        $"{eventInfo.GmtCreate:yyyy-MM-dd}_{eventInfo.Member.MemberId}" + (outputImg ? "" : ".pdf");
     var filePath = Path.Combine(outputDir.Name, fileName);
     if (File.Exists(filePath))
-    {
         continue; //已经生成过了
-    }
     Console.WriteLine("生成：" + fileName);
 #endif
     var logs = eventInfo.Logs ?? (await api.GetEventById(eventInfo.EventId)).Logs!;
-    Document
+    var doc = Document
         .Create(container =>
         {
             container.Page(page =>
@@ -56,7 +60,7 @@ foreach (var eventInfo in (await api.GetEvents()).Skip(1))
                             .SemiBold()
                             .FontSize(30)
                             .FontColor(Colors.Blue.Medium);
-                        t.Cell().Row(1).Column(2).AlignRight().Width(80).Image("CA-logo.svg");
+                        t.Cell().Row(1).Column(2).AlignRight().Width(80).Svg(logoSvg);
                     });
 
                 //x.Item().AlignCenter().Width(100).Image("CA-logo.png");
@@ -97,10 +101,14 @@ foreach (var eventInfo in (await api.GetEvents()).Skip(1))
                                                     .Italic();
                                                 if (content is not null)
                                                 {
-                                                    t.Item()
+                                                    var text = t.Item()
                                                         .AlignCenter()
                                                         .Text(content)
                                                         .FontColor(Colors.Green.Darken2);
+                                                    if (content.Length > 50)
+                                                    {
+                                                        text.FontSize(13);
+                                                    }
                                                 }
                                             });
                                     }
@@ -144,7 +152,7 @@ foreach (var eventInfo in (await api.GetEvents()).Skip(1))
                                             Line("+ 取消", timeOrNull: eventLog.GmtCreate);
                                             break;
                                         case Action.Drop:
-                                            Line("+ 丢弃", timeOrNull: eventLog.GmtCreate);
+                                            Line("- 丢弃", timeOrNull: eventLog.GmtCreate);
                                             break;
                                         case Action.Commit:
                                             Line(
@@ -190,8 +198,23 @@ foreach (var eventInfo in (await api.GetEvents()).Skip(1))
             });
         })
 #if DEBUG
-        .ShowInPreviewer();
+        .ShowInPreviewer(); //预览
 #else
-        .GeneratePdf(filePath);
+        //添加元数据
+        .WithMetadata(
+            new DocumentMetadata
+            {
+                Author = "NBTCA",
+                CreationDate = eventInfo.GmtModified.DateTime,
+            }
+        );
+    if (outputImg)
+    { //直接输出图片
+        doc.GenerateImages(index => filePath + "_" + index + ".png");
+    }
+    else
+    { //输出pdf
+        doc.GeneratePdf(filePath);
+    }
 #endif
 }
