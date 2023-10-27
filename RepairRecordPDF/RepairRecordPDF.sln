@@ -3,7 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.7.34031.279
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RepairRecordPDF", "RepairRecordPDF\RepairRecordPDF.csproj", "{224EA836-5CDB-4C75-B779-2D0775B5971D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RepairRecordPDF", "RepairRecordPDF\RepairRecordPDF.csproj", "{224EA836-5CDB-4C75-B779-2D0775B5971D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SaturdayAPI", "SaturdayAPI\SaturdayAPI.csproj", "{D9D6BE8C-A93B-40AE-AFD2-B661C02FD161}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SaturdayAPI.Test", "SaturdayAPI.Test\SaturdayAPI.Test.csproj", "{28CC2A75-07DF-42CE-876C-10731AB8AF1E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +19,14 @@ Global
 		{224EA836-5CDB-4C75-B779-2D0775B5971D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{224EA836-5CDB-4C75-B779-2D0775B5971D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{224EA836-5CDB-4C75-B779-2D0775B5971D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D9D6BE8C-A93B-40AE-AFD2-B661C02FD161}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D9D6BE8C-A93B-40AE-AFD2-B661C02FD161}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D9D6BE8C-A93B-40AE-AFD2-B661C02FD161}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D9D6BE8C-A93B-40AE-AFD2-B661C02FD161}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28CC2A75-07DF-42CE-876C-10731AB8AF1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28CC2A75-07DF-42CE-876C-10731AB8AF1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28CC2A75-07DF-42CE-876C-10731AB8AF1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28CC2A75-07DF-42CE-876C-10731AB8AF1E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
