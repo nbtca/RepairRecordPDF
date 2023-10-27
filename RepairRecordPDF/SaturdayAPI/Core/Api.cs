@@ -1,17 +1,18 @@
 ﻿using Newtonsoft.Json;
 using SaturdayAPI.Core.Types;
+using EventInfo = SaturdayAPI.Core.Types.EventInfo;
 
 namespace SaturdayAPI.Core;
 
 public class Api
 {
-    public Api(string address = "https://api.nbtca.space/v2/")
+    public Api(string baseAddress = "https://api.nbtca.space/v2/")
     {
-        HttpAddress = address;
-        HttpClient = new() { BaseAddress = new Uri(address) };
+        HttpBaseAddress = baseAddress;
+        HttpClient = new() { BaseAddress = new Uri(baseAddress) };
     }
 
-    internal string HttpAddress;
+    internal string HttpBaseAddress;
     internal HttpClient HttpClient;
 
     public async Task<IEnumerable<EventInfo>> GetEvents()
@@ -29,6 +30,15 @@ public class Api
         response.EnsureSuccessStatusCode();
         var content = await response.Content.ReadAsStringAsync();
         return JsonConvert.DeserializeObject<EventInfo>(content)
+            ?? throw new NullReferenceException(nameof(content));
+    }
+
+    public async Task<IEnumerable<MemberInfo>> GetMembers()
+    {
+        var response = await HttpClient.GetAsync("members");
+        response.EnsureSuccessStatusCode();
+        var content = await response.Content.ReadAsStringAsync();
+        return JsonConvert.DeserializeObject<MemberInfo[]>(content)
             ?? throw new NullReferenceException(nameof(content));
     }
 }

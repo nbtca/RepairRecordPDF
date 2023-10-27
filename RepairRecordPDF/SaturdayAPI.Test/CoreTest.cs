@@ -30,4 +30,12 @@ public class Tests
         Console.WriteLine(JsonConvert.SerializeObject(result));
         Assert.Pass();
     }
+
+    [Test]
+    public async Task TestMembers()
+    {
+        var result = await api.GetMembers();
+        Console.WriteLine(JsonConvert.SerializeObject(result));
+        Assert.Pass();
+    }
 }
